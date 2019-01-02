@@ -9,7 +9,7 @@
 
 const char* ssid = STASSID;
 const char* password = STAPSK;
-const char* ntpServerName = "ntp.task.gda.pl";
+const char* ntpServerName = "2.pl.pool.ntp.org";
 
 IPAddress timeServerIP;
 
@@ -22,18 +22,20 @@ const unsigned long seventyYears =2208988800UL;
 
 WiFiUDP udp;
 
-int SER1 = 4;
-int SCK1 = 6;
-int RCK1 = 8;
+int SER1 = 14;
+int SCK1 = 5;
+int RCK1 = 4;
 int i = 100;
 time_t t;
 
 time_t getTimeFromNTPServer();
-unsigned long sendNTPpacket(IPAddress&);
+void sendNTPpacket(IPAddress&);
 void sendVal(int, int, int);
 time_t tmConvert_t(int, byte, byte, byte, byte, byte);
 
 void setup() {
+  Serial.begin(115200);
+   //Serial.print("Hello world");
   pinMode(SER1, OUTPUT);
   pinMode(SCK1, OUTPUT);
   pinMode(RCK1, OUTPUT);
@@ -42,7 +44,7 @@ void setup() {
   while(WiFi.status()!=WL_CONNECTED){
     delay(500);
   }
-  udp.begin(localPort); 
+  udp.begin(localPort);  
   //t = tmConvert_t(2000,1,1,15,56,00); 
 }
 
@@ -52,12 +54,16 @@ void loop() {
     if(nowy!=0){
       t = nowy;
       i = 0;
-      }else{
+      }else{   
         t = t+2;
       }
   }
   digitalWrite(RCK1, LOW);
-  sendVal(SCK1, SER1, hour(t));  
+  if(hour(t)==23){
+     sendVal(SCK1, SER1, 0);
+  }else{
+     sendVal(SCK1, SER1, (hour(t)+1));  
+  }
   sendVal(SCK1, SER1, minute(t));
   sendVal(SCK1, SER1, second(t));
   digitalWrite(RCK1, HIGH);
@@ -79,7 +85,7 @@ void sendVal(int SCK1, int SER1, int k){
     digitalWrite(SCK1, HIGH);
   }  
 }
-unsigned long sendNTPpacket(IPAddress& address){
+void sendNTPpacket(IPAddress& address){
     memset(packetBuffer, 0, NTP_PACKET_SIZE);
     packetBuffer[0] = 0b11100011;
     packetBuffer[1] = 0;
